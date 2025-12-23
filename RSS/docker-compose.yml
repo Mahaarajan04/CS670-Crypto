@@ -1,0 +1,83 @@
+services:
+  rss_gen_queries:
+    container_name: rss_gen_queries
+    build: .
+    command: ./gen_queries
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+    networks:
+      - mpc_net
+
+  dealer:
+    build: .
+    command: ./dealer
+    container_name: dealer
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      rss_gen_queries:
+        condition: service_completed_successfully
+    networks:
+      - mpc_net
+
+  rss_p0:
+    build: .
+    command: ./p0
+    container_name: rss_p0
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      rss_p1:
+        condition: service_started
+      rss_p2:
+        condition: service_started
+      dealer:
+        condition: service_started
+      rss_gen_queries:
+        condition: service_completed_successfully
+    networks:
+      - mpc_net
+
+  rss_p1:
+    build: .
+    command: ./p1
+    container_name: rss_p1
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      rss_p2:
+        condition: service_started
+      dealer:
+        condition: service_started
+      rss_gen_queries:
+        condition: service_completed_successfully
+    networks:
+      - mpc_net
+
+  rss_p2:
+    build: .
+    command: ./p2
+    container_name: rss_p2
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      dealer:
+        condition: service_started
+      rss_gen_queries:
+        condition: service_completed_successfully
+    networks:
+      - mpc_net
+
+networks:
+  mpc_net:
+    driver: bridge
