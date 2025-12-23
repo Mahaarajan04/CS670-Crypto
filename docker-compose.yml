@@ -1,0 +1,74 @@
+services:
+  gen_queries:
+    build: .
+    container_name: gen_queries
+    command: ./gen_queries
+    dns:
+      - 8.8.8.8
+    environment:
+      - ROLE=gen_queries
+    networks:
+      - mpc_net
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+  p2:
+    build: .
+    container_name: p2
+    command: ./p2
+    dns:
+      - 8.8.8.8
+    environment:
+      - ROLE=p2
+    networks:
+      - mpc_net
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+
+  p0:
+    build: .
+    container_name: p0
+    command: ./p0
+    dns:
+      - 8.8.8.8
+    environment:
+      - ROLE=p0
+    depends_on:
+      p2:
+        condition: service_started
+      p1:
+        condition: service_started #due to ordering of connection set up
+      gen_queries:
+        condition: service_completed_successfully
+    networks:
+      - mpc_net
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+  p1:
+    build: .
+    container_name: p1
+    command: ./p1
+    dns:
+      - 8.8.8.8
+    environment:
+      - ROLE=p1
+    depends_on:
+      p2:
+        condition: service_started
+      gen_queries:
+        condition: service_completed_successfully
+    networks:
+      - mpc_net
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+  
+networks:
+  mpc_net:
+    driver: bridge
